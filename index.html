@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Clephu Games & Development - Global HTML5 Platform</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: #060913;
+            --bg-card: rgba(19, 28, 46, 0.7);
+            --accent-glow: #6366f1;
+            --accent-primary: #ef4444;
+            --accent-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+            --accent-green: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            --accent-gold: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Hide Netlify Badge */
+        #netlify-badge, a[href*="netlify.com"] {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+
+        body { font-family: 'Poppins', sans-serif; background-color: var(--bg-main); color: var(--text-main); margin: 0; padding: 0; display: flex; justify-content: center; }
+        .app-container { width: 100%; max-width: 480px; min-height: 100vh; background: radial-gradient(circle at top, #111827 0%, #060913 100%); display: flex; flex-direction: column; box-shadow: 0 0 50px rgba(0,0,0,0.8); position: relative; overflow-x: hidden; }
+
+        /* Toast Notification */
+        #toastContainer { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 99999; display: flex; flex-direction: column; gap: 8px; width: 90%; max-width: 400px; pointer-events: none; }
+        .toast { background: rgba(13, 20, 33, 0.95); backdrop-filter: blur(12px); border: 1px solid var(--accent-glow); color: var(--text-main); padding: 12px 18px; border-radius: 12px; font-size: 11px; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.5); opacity: 0; transform: translateY(-20px); transition: all 0.3s ease; pointer-events: auto; display: flex; align-items: center; gap: 10px; }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        .toast.success { border-color: #22c55e; }
+        .toast.error { border-color: #ef4444; }
+
+        #splashScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, #111827 0%, #060913 100%); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.5s ease, visibility 0.5s ease; }
+        .splash-logo-box { text-align: center; }
+        .splash-icon { font-size: 52px; margin-bottom: 12px; background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .splash-title { font-size: 18px; font-weight: 800; background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0 0 4px 0; }
+        .splash-subtitle { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 2px; margin: 0 0 30px 0; }
+        .spinner { width: 36px; height: 36px; border: 3px solid rgba(99, 102, 241, 0.2); border-top: 3px solid #6366f1; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        header { padding: 14px 20px; background: rgba(13, 20, 33, 0.85); backdrop-filter: blur(16px); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10; }
+        .logo { cursor: pointer; display: flex; flex-direction: column; max-width: 160px; }
+        .logo h1 { font-size: 11px; margin: 0; line-height: 1.2; background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800; }
+        .logo p { font-size: 6px; color: var(--text-muted); margin: 2px 0 0 0; text-transform: uppercase; letter-spacing: 1px; }
+
+        .header-actions { display: flex; gap: 6px; align-items: center; }
+        .lang-select { background: rgba(6, 9, 19, 0.8); border: 1px solid var(--border-color); color: #fff; font-size: 10px; padding: 5px 8px; border-radius: 8px; outline: none; cursor: pointer; font-family: 'Poppins', sans-serif; }
+        .btn-nav { font-size: 10px; background: rgba(99, 102, 241, 0.15); color: #818cf8; text-decoration: none; padding: 6px 10px; border-radius: 8px; font-weight: 600; cursor: pointer; border: 1px solid rgba(99, 102, 241, 0.3); }
+
+        .content { padding: 20px; flex: 1; padding-bottom: 50px; }
+        .view-section { display: none; }
+        .view-section.active { display: block; }
+
+        .promo-banner-container { width: 100%; height: 130px; border-radius: 16px; overflow: hidden; position: relative; margin-bottom: 16px; border: 1px solid rgba(245, 158, 11, 0.4); box-shadow: 0 4px 20px rgba(245, 158, 11, 0.2); background: #0f172a; }
+        .promo-slide { width: 100%; height: 100%; position: absolute; top: 0; left: 0; opacity: 0; transition: opacity 0.8s ease-in-out; display: flex; align-items: center; cursor: pointer; }
+        .promo-slide.active { opacity: 1; }
+        .promo-bg { position: absolute; width: 100%; height: 100%; object-fit: cover; filter: brightness(0.6); }
+        .promo-content { position: relative; z-index: 2; padding: 16px; }
+        .promo-tag { background: var(--accent-gold); color: #000; font-size: 8px; font-weight: 800; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; display: inline-block; margin-bottom: 4px; }
+        .promo-title { font-size: 14px; font-weight: 700; color: #fff; margin: 0 0 2px 0; }
+        .promo-desc { font-size: 9px; color: #cbd5e1; margin: 0; }
+
+        .search-box { position: relative; margin-bottom: 16px; }
+        .search-input { width: 100%; padding: 14px 16px 14px 44px; background: var(--bg-card); backdrop-filter: blur(10px); border: 1px solid var(--border-color); border-radius: 14px; color: var(--text-main); font-size: 12px; font-family: 'Poppins', sans-serif; box-sizing: border-box; outline: none; }
+        .search-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-size: 14px; color: var(--text-muted); }
+
+        .genre-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 20px; scrollbar-width: none; }
+        .genre-scroll::-webkit-scrollbar { display: none; }
+        .genre-pill { padding: 8px 16px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 20px; font-size: 11px; font-weight: 500; color: var(--text-muted); white-space: nowrap; cursor: pointer; }
+        .genre-pill.active { background: var(--accent-gradient); color: white; border-color: transparent; font-weight: 600; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.35); }
+
+        .section-title { font-size: 14px; font-weight: 700; margin-bottom: 14px; color: var(--text-main); }
+        .game-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+        .game-card { background: var(--bg-card); backdrop-filter: blur(10px); border: 1px solid var(--border-color); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; cursor: pointer; transition: all 0.25s ease; }
+        .game-thumb-container { position: relative; width: 100%; height: 115px; }
+        .game-thumb { width: 100%; height: 100%; object-fit: cover; background: #1e293b; }
+        .game-badge { position: absolute; top: 8px; right: 8px; background: rgba(6, 9, 19, 0.75); backdrop-filter: blur(6px); padding: 3px 8px; border-radius: 6px; font-size: 9px; font-weight: 600; color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.2); }
+        .game-details { padding: 12px; display: flex; flex-direction: column; flex: 1; }
+        .game-title { font-size: 12px; font-weight: 600; margin: 0 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-main); }
+        .game-author { font-size: 10px; color: var(--text-muted); margin-bottom: 10px; }
+        .btn-play { margin-top: auto; width: 100%; padding: 8px; background: var(--accent-gradient); color: white; border: none; border-radius: 10px; font-weight: 600; font-size: 11px; cursor: pointer; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); }
+
+        .form-card { background: var(--bg-card); backdrop-filter: blur(12px); border: 1px solid var(--border-color); border-radius: 20px; padding: 20px; margin-bottom: 20px; }
+        .form-group { margin-bottom: 14px; }
+        .form-label { font-size: 11px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 6px; }
+        .form-input, .form-select { width: 100%; padding: 12px 14px; background: rgba(6, 9, 19, 0.8); border: 1px solid var(--border-color); border-radius: 12px; color: var(--text-main); font-size: 12px; font-family: 'Poppins', sans-serif; box-sizing: border-box; outline: none; }
+        .btn-submit { width: 100%; padding: 13px; background: var(--accent-gradient); color: white; border: none; border-radius: 12px; font-weight: 700; font-size: 12px; cursor: pointer; margin-top: 10px; display: block; text-align: center; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.35); }
+
+        .dev-tabs { display: flex; background: rgba(13, 20, 33, 0.6); border: 1px solid var(--border-color); margin-bottom: 16px; border-radius: 14px; overflow: hidden; padding: 4px; }
+        .dev-tab-btn { flex: 1; padding: 6px; text-align: center; font-size: 8px; font-weight: 600; color: var(--text-muted); background: none; border: none; cursor: pointer; border-radius: 10px; }
+        .dev-tab-btn.active { color: #fff; background: var(--accent-glow); }
+
+        .history-item { background: rgba(6, 9, 19, 0.6); border: 1px solid var(--border-color); border-radius: 10px; padding: 10px; margin-bottom: 8px; font-size: 11px; display: flex; justify-content: space-between; align-items: center; }
+        
+        .chat-box { height: 200px; background: rgba(6, 9, 19, 0.9); border: 1px solid var(--border-color); border-radius: 12px; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+        .chat-msg { background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.3); padding: 8px 10px; border-radius: 10px; font-size: 11px; }
+        .chat-msg.admin-reply { background: rgba(34, 197, 94, 0.15); border-color: rgba(34, 197, 94, 0.3); }
+        .chat-sender { font-size: 9px; font-weight: 700; color: #38bdf8; margin-bottom: 2px; }
+
+        .financial-box { background: rgba(6, 9, 19, 0.6); border: 1px solid var(--border-color); border-radius: 10px; padding: 10px; font-size: 11px; margin-bottom: 10px; }
+        .financial-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
+
+        #gameModal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(6, 9, 19, 0.96); backdrop-filter: blur(16px); z-index: 100; display: none; flex-direction: column; }
+        .modal-header { padding: 16px 20px; background: rgba(13, 20, 33, 0.9); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+        .modal-title { font-size: 13px; font-weight: 600; margin: 0; color: var(--text-main); }
+        .btn-close { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.4); padding: 6px 14px; border-radius: 8px; font-weight: 600; font-size: 11px; cursor: pointer; }
+        .modal-body { flex: 1; width: 100%; background: #000; }
+        .modal-body iframe { width: 100%; height: 100%; border: none; }
+    </style>
+</head>
+<body>
+
+    <div id="toastContainer"></div>
+
+    <div id="splashScreen">
+        <div class="splash-logo-box">
+            <div class="splash-icon">🚀</div>
+            <h2 class="splash-title">CLEPHU GAMES</h2>
+            <p class="splash-subtitle">& DEVELOPMENT</p>
+            <div class="spinner"></div>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <header>
+            <div class="logo" id="logoStoreBtn">
+                <h1>🎮 CLEPHU GAMES</h1>
+                <p>& DEVELOPMENT</p>
+            </div>
+            <div class="header-actions">
+                <select id="langSelector" class="lang-select" onchange="gantiBahasa(this.value)">
+                    <option value="en">English</option>
+                    <option value="id">Indonesian</option>
+                    <option value="es">Español</option>
+                    <option value="fr">Français</option>
+                    <option value="zh">中文</option>
+                    <option value="ar">العربية</option>
+                </select>
+                <button id="navDevBtn" class="btn-nav">🚀 Dev Portal</button>
+            </div>
+        </header>
+
+        <!-- VIEW 1: APP STORE -->
+        <div id="view-store" class="view-section active content">
+            <div class="promo-banner-container" id="promoBannerBox"></div>
+
+            <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="searchInput" class="search-input" data-i18n-placeholder="search_placeholder" placeholder="Search your dream game...">
+            </div>
+
+            <div class="genre-scroll" id="genreContainer">
+                <button class="genre-pill active" data-genre="all" data-i18n="genre_all">🔥 All</button>
+                <button class="genre-pill" data-genre="action" data-i18n="genre_action">⚔️ Action</button>
+                <button class="genre-pill" data-genre="puzzle" data-i18n="genre_puzzle">🧩 Puzzle</button>
+                <button class="genre-pill" data-genre="strategy" data-i18n="genre_strategy">🎯 Strategy</button>
+                <button class="genre-pill" data-genre="casual" data-i18n="genre_casual">🕹️ Casual</button>
+            </div>
+
+            <div class="section-title" data-i18n="featured_title">Featured Games Collection</div>
+            <div id="storeGameList" class="game-grid">
+                <p style="font-size: 12px; color: var(--text-muted); text-align: center; grid-column: span 2; padding: 40px;" data-i18n="loading_text">Loading game ecosystem...</p>
+            </div>
+        </div>
+
+        <!-- VIEW 2: PORTAL DEVELOPER -->
+        <div id="view-developer" class="view-section content">
+            <div class="dev-tabs">
+                <button id="tabSubmitBtn" class="dev-tab-btn active" data-i18n="tab_upload">🌐 URL</button>
+                <button id="tabHistoryBtn" class="dev-tab-btn" data-i18n="tab_history">📜 History</button>
+                <button id="tabPromoBtn" class="dev-tab-btn" data-i18n="tab_promo">🌟 Promo</button>
+                <button id="tabAnalyticsBtn" class="dev-tab-btn" data-i18n="tab_earnings">📊 Earn</button>
+                <button id="tabChatBtn" class="dev-tab-btn" data-i18n="tab_chat">💬 Chat</button>
+            </div>
+
+            <!-- Tab 1: Submit Game URL (Ganti ZIP) -->
+            <div id="devTabSubmit" class="form-card">
+                <h3 style="font-size: 14px; margin-top:0; margin-bottom:4px; color:#818cf8;" data-i18n="upload_header">Submit Online Game URL</h3>
+                <p style="font-size: 10px; color:var(--text-muted); margin-bottom:16px;" data-i18n="upload_desc">Submit your playable online game URL to be reviewed and approved by Admin.</p>
+                
+                <div class="form-group"><label class="form-label" data-i18n="lbl_title">Game Title</label><input type="text" id="gameTitle" class="form-input" placeholder="e.g. Chess Master 3D"></div>
+                <div class="form-group"><label class="form-label" data-i18n="lbl_author">Studio / Developer Name</label><input type="text" id="gameAuthor" class="form-input" placeholder="e.g. Clephu Studio"></div>
+                <div class="form-group">
+                    <label class="form-label" data-i18n="lbl_genre">Genre Category</label>
+                    <select id="gameGenre" class="form-select">
+                        <option value="Action" data-i18n="genre_action">Action</option>
+                        <option value="Puzzle" data-i18n="genre_puzzle">Puzzle</option>
+                        <option value="Strategy" data-i18n="genre_strategy">Strategy</option>
+                        <option value="Casual" data-i18n="genre_casual">Casual</option>
+                    </select>
+                </div>
+                <div class="form-group"><label class="form-label">Playable Game URL (https://...)</label><input type="url" id="gameUrlInput" class="form-input" placeholder="https://mygame.itch.io/embed"></div>
+                <div class="form-group"><label class="form-label" data-i18n="lbl_thumb">Upload Thumbnail Image</label><input type="file" id="gameImageFile" class="form-input" accept="image/*" style="padding: 7px; cursor: pointer;"></div>
+                
+                <button type="button" id="submitGameBtn" class="btn-submit" data-i18n="btn_submit_zip">🚀 Submit URL to Admin</button>
+            </div>
+
+            <!-- Tab 2: Submission History -->
+            <div id="devTabHistory" class="form-card" style="display: none;">
+                <h3 style="font-size: 14px; margin-top:0; margin-bottom:4px; color:#38bdf8;" data-i18n="history_header">Game Submission History</h3>
+                <p style="font-size: 10px; color:var(--text-muted); margin-bottom:12px;">Track your submitted online games status.</p>
+                <div class="form-group"><input type="text" id="historyStudioInput" class="form-input" placeholder="Enter your studio name to filter..."></div>
+                <button type="button" id="loadHistoryBtn" class="btn-submit" style="background:rgba(56,189,248,0.2); border:1px solid #38bdf8; margin-bottom:12px;">🔍 View History</button>
+                <div id="devHistoryList"><p style="font-size: 11px; color: var(--text-muted); text-align: center; padding: 15px;">Enter studio name above.</p></div>
+            </div>
+
+            <!-- Tab 3: Promo Request -->
+            <div id="devTabPromo" class="form-card" style="display: none;">
+                <h3 style="font-size: 14px; margin-top:0; margin-bottom:4px; color:#f59e0b;" data-i18n="promo_header">Request Banner Promotion</h3>
+                <div class="form-group"><label class="form-label" data-i18n="promo_studio">Your Studio Name</label><input type="text" id="promoAuthor" class="form-input" placeholder="Enter studio name..."></div>
+                <div class="form-group"><label class="form-label" data-i18n="promo_gametitle">Promo Game Title</label><input type="text" id="promoTitleGame" class="form-input" placeholder="Enter game title..."></div>
+                <div class="form-group"><label class="form-label" data-i18n="promo_selectgame">Select Registered Game</label><select id="promoGameSelect" class="form-select"></select></div>
+                <div class="form-group"><label class="form-label" data-i18n="promo_banner">Upload Promo Banner (Landscape)</label><input type="file" id="promoImageFile" class="form-input" accept="image/*" style="padding: 7px; cursor: pointer;"></div>
+                <button type="button" id="submitPromoBtn" class="btn-submit" style="background: var(--accent-gold); color:#000;" data-i18n="btn_req_promo">⭐ Request Promo</button>
+            </div>
+
+            <!-- Tab 4: Earnings -->
+            <div id="devTabAnalytics" class="form-card" style="display: none;">
+                <h3 style="font-size: 14px; margin-top:0; margin-bottom:4px; color:#22c55e;" data-i18n="earn_header">Statistics & Revenue Withdrawal</h3>
+                <div class="form-group"><label class="form-label" data-i18n="earn_studio">Your Studio Name</label><input type="text" id="checkAuthorName" class="form-input" placeholder="Enter studio name..."></div>
+                <button type="button" id="checkStatsBtn" class="btn-submit" style="background:rgba(99,102,241,0.2); border:1px solid #6366f1; margin-bottom:16px;" data-i18n="btn_check_stats">🔍 Check Statistics</button>
+                <div id="devStatsResult"><p style="font-size: 11px; color: var(--text-muted); text-align: center; padding: 15px;" data-i18n="earn_enter_name">Enter your studio name.</p></div>
+                <div id="withdrawSection" style="display: none; border-top: 1px solid var(--border-color); padding-top: 16px; margin-top: 16px;">
+                    <div class="form-group"><label class="form-label" data-i18n="wd_method">Method</label><select id="wdMethod" class="form-select"><option value="PayPal">PayPal</option><option value="Bank Transfer">Bank Transfer</option><option value="Crypto">Crypto</option></select></div>
+                    <div class="form-group"><label class="form-label" data-i18n="wd_acc">Account Details & Name</label><input type="text" id="wdAccount" class="form-input" placeholder="email@domain.com (John)"></div>
+                    <div class="form-group"><label class="form-label" data-i18n="wd_amount">Amount ($ / IDR)</label><input type="number" id="wdAmount" class="form-input" placeholder="Amount"></div>
+                    <button type="button" id="withdrawBtn" class="btn-submit" style="background: var(--accent-green);" data-i18n="btn_withdraw">💸 Withdraw Funds</button>
+                </div>
+            </div>
+
+            <!-- Tab 5: Chat -->
+            <div id="devTabChat" class="form-card" style="display: none;">
+                <h3 style="font-size: 14px; margin-top:0; margin-bottom:4px; color:#38bdf8;" data-i18n="chat_header">Admin Discussion Center</h3>
+                <div class="form-group"><input type="text" id="chatDevName" class="form-input" placeholder="Studio Name..."></div>
+                <div class="chat-box" id="chatMessagesContainer"><div style="font-size: 10px; color: var(--text-muted); text-align: center; margin: auto;" data-i18n="chat_empty">No messages yet.</div></div>
+                <div class="form-group" style="margin-bottom:0;"><input type="text" id="chatInputText" class="form-input" data-i18n-placeholder="chat_placeholder" placeholder="Type message..."></div>
+                <button type="button" id="sendChatBtn" class="btn-submit" style="margin-top: 8px;" data-i18n="btn_send">📤 Send Message</button>
+            </div>
+
+            <button type="button" class="backToStoreBtn" style="width:100%; background:none; border:none; color:var(--text-muted); font-size:11px; margin-top:12px; cursor:pointer;" data-i18n="btn_back_store">⬅️ Back to Store</button>
+        </div>
+    </div>
+
+    <!-- MODAL GAME -->
+    <div id="gameModal">
+        <div class="modal-header">
+            <h3 id="modalGameTitle" class="modal-title">Game Title</h3>
+            <button id="closeModalBtn" class="btn-close" data-i18n="btn_close">Close ✕</button>
+        </div>
+        <div class="modal-body"><iframe id="gameIframe" src=""></iframe></div>
+    </div>
+
+    <!-- FIREBASE & CORE SCRIPT -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyCMw7gOMC3Fz_ZziVG5nMjlglzFi_ZWCHY",
+          authDomain: "clephu-mini-game-app.firebaseapp.com",
+          projectId: "clephu-mini-game-app",
+          storageBucket: "clephu-mini-game-app.firebasestorage.app",
+          messagingSenderId: "596292189047",
+          appId: "1:596292189047:web:03e8e21d2b1911a25dbf72"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        window.db = db;
+        window.firebaseTools = { collection, addDoc, getDocs, doc, updateDoc, deleteDoc };
+    </script>
+
+    <script>
+        const i18n = {
+            en: {
+                search_placeholder: "Search your dream game...",
+                genre_all: "🔥 All", genre_action: "⚔️ Action", genre_puzzle: "🧩 Puzzle", genre_strategy: "🎯 Strategy", genre_casual: "🕹️ Casual",
+                featured_title: "Featured Games Collection", loading_text: "Loading game ecosystem...",
+                tab_upload: "🌐 URL", tab_history: "📜 History", tab_promo: "🌟 Promo", tab_earnings: "📊 Earn", tab_chat: "💬 Chat",
+                upload_header: "Submit Online Game URL", upload_desc: "Submit your playable online game URL to be reviewed and approved by Admin.",
+                lbl_title: "Game Title", lbl_author: "Studio / Developer Name", lbl_genre: "Genre Category", lbl_thumb: "Upload Thumbnail Image",
+                btn_submit_zip: "🚀 Submit URL to Admin",
+                history_header: "Game Submission History",
+                promo_header: "Request Banner Promotion", promo_studio: "Your Studio Name", promo_gametitle: "Promo Game Title", promo_selectgame: "Select Registered Game", promo_banner: "Upload Promo Banner (Landscape)", btn_req_promo: "⭐ Request Promo",
+                earn_header: "Statistics & Revenue Withdrawal", earn_studio: "Your Studio Name", btn_check_stats: "🔍 Check Statistics", earn_enter_name: "Enter your studio name.",
+                wd_method: "Method", wd_acc: "Account Details & Name", wd_amount: "Amount", btn_withdraw: "💸 Withdraw Funds",
+                chat_header: "Admin Discussion Center", chat_empty: "No messages yet.", chat_placeholder: "Type message...", btn_send: "📤 Send Message",
+                btn_back_store: "⬅️ Back to Store", btn_close: "Close ✕", play_btn: "Play Now"
+            },
+            id: {
+                search_placeholder: "Cari game impianmu...",
+                genre_all: "🔥 Semua", genre_action: "⚔️ Aksi", genre_puzzle: "🧩 Puzzle", genre_strategy: "🎯 Strategi", genre_casual: "🕹️ Casual",
+                featured_title: "Koleksi Game Unggulan", loading_text: "Memuat ekosistem game...",
+                tab_upload: "🌐 URL", tab_history: "📜 Riwayat", tab_promo: "🌟 Promo", tab_earnings: "📊 Saldo", tab_chat: "💬 Chat",
+                upload_header: "Daftarkan URL Game Online", upload_desc: "Kirim link game online Anda untuk diperiksa dan disetujui Admin Pusat.",
+                lbl_title: "Judul Game", lbl_author: "Nama Studio / Developer", lbl_genre: "Genre Kategori", lbl_thumb: "Upload Gambar Thumbnail",
+                btn_submit_zip: "🚀 Kirim URL ke Admin",
+                history_header: "Riwayat Penyetoran Game",
+                promo_header: "Ajukan Slot Promosi Banner", promo_studio: "Nama Studio Anda", promo_gametitle: "Judul Game Promosi", promo_selectgame: "Pilih Game Terdaftar", promo_banner: "Upload Banner Promosi (Landscape)", btn_req_promo: "⭐ Ajukan Promo",
+                earn_header: "Statistik & Penarikan Pendapatan", earn_studio: "Nama Studio Anda", btn_check_stats: "🔍 Cek Statistik", earn_enter_name: "Masukkan nama studio.",
+                wd_method: "Metode", wd_acc: "Nomor Rekening & Nama", wd_amount: "Nominal", btn_withdraw: "💸 Tarik Saldo",
+                chat_header: "Pusat Diskusi Admin", chat_empty: "Belum ada pesan.", chat_placeholder: "Pesan...", btn_send: "📤 Kirim",
+                btn_back_store: "⬅️ Kembali ke Toko", btn_close: "Tutup ✕", play_btn: "Mainkan"
+            }
+        };
+
+        let currentLang = 'en';
+
+        function gantiBahasa(lang) {
+            currentLang = lang;
+            localStorage.setItem('clephu_lang', lang);
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (i18n[lang] && i18n[lang][key]) el.innerText = i18n[lang][key];
+            });
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                if (i18n[lang] && i18n[lang][key]) el.placeholder = i18n[lang][key];
+            });
+            muatStoreGame();
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `<span>${type === 'success' ? '✅' : '⚠️'}</span> <span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 10);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        window.addEventListener('load', () => {
+            const savedLang = localStorage.getItem('clephu_lang') || 'en';
+            document.getElementById('langSelector').value = savedLang;
+            gantiBahasa(savedLang);
+            setTimeout(() => {
+                const splash = document.getElementById('splashScreen');
+                if(splash) { splash.style.opacity = '0'; splash.style.visibility = 'hidden'; }
+            }, 1500);
+        });
+
+        let genreAktif = 'all';
+
+        if (!localStorage.getItem('clephu_promos')) localStorage.setItem('clephu_promos', JSON.stringify([]));
+        if (!localStorage.getItem('clephu_withdraws')) localStorage.setItem('clephu_withdraws', JSON.stringify([]));
+        if (!localStorage.getItem('clephu_chats')) localStorage.setItem('clephu_chats', JSON.stringify([]));
+
+        function gantiView(viewName) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.getElementById('view-' + viewName).classList.add('active');
+            if (viewName === 'store') { muatStoreGame(); muatBannerPromosi(); }
+            if (viewName === 'developer') muatDropdownPromoGame();
+        }
+
+        document.getElementById('logoStoreBtn').addEventListener('click', () => gantiView('store'));
+        document.getElementById('navDevBtn').addEventListener('click', () => gantiView('developer'));
+        document.querySelectorAll('.backToStoreBtn').forEach(btn => btn.addEventListener('click', () => gantiView('store')));
+
+        ['Submit', 'History', 'Promo', 'Analytics', 'Chat'].forEach(tab => {
+            document.getElementById('tab' + tab + 'Btn').addEventListener('click', function() {
+                ['Submit', 'History', 'Promo', 'Analytics', 'Chat'].forEach(t => {
+                    document.getElementById('tab' + t + 'Btn').classList.remove('active');
+                    document.getElementById('devTab' + t).style.display = 'none';
+                });
+                this.classList.add('active');
+                document.getElementById('devTab' + tab).style.display = 'block';
+                if(tab === 'Chat') muatChatDeveloper();
+                if(tab === 'Promo') muatDropdownPromoGame();
+            });
+        });
+
+        document.querySelectorAll('.genre-pill').forEach(pill => {
+            pill.addEventListener('click', function() {
+                document.querySelectorAll('.genre-pill').forEach(p => p.classList.remove('active'));
+                this.classList.add('active');
+                genreAktif = this.getAttribute('data-genre');
+                filterGameData();
+            });
+        });
+
+        document.getElementById('searchInput').addEventListener('input', () => filterGameData());
+
+        // Kirim URL Game ke Firebase & Admin Pusat
+        document.getElementById('submitGameBtn').addEventListener('click', async function() {
+            const title = document.getElementById('gameTitle').value.trim();
+            const author = document.getElementById('gameAuthor').value.trim();
+            const genre = document.getElementById('gameGenre').value;
+            const gameUrl = document.getElementById('gameUrlInput').value.trim();
+            const imageFile = document.getElementById('gameImageFile').files[0];
+
+            if (!title || !author || !gameUrl) { showToast("Please fill in Title, Studio Name, and Playable Game URL!", "error"); return; }
+
+            let imageThumb = "https://via.placeholder.com/150";
+            if (imageFile) {
+                imageThumb = await new Promise(resolve => {
+                    const reader = new FileReader();
+                    reader.onload = e => resolve(e.target.result);
+                    reader.readAsDataURL(imageFile);
+                });
+            }
+
+            const gameData = {
+                title,
+                author,
+                genre,
+                link: gameUrl,
+                image: imageThumb,
+                status: "pending",
+                date: new Date().toLocaleDateString(),
+                playersCount: 0,
+                adViews: 0
+            };
+
+            try {
+                if(window.db && window.firebaseTools) {
+                    await window.firebaseTools.addDoc(window.firebaseTools.collection(window.db, "clephu_games"), gameData);
+                }
+                showToast("Online game URL successfully submitted to Central Admin!");
+                document.getElementById('gameTitle').value = "";
+                document.getElementById('gameAuthor').value = "";
+                document.getElementById('gameUrlInput').value = "";
+                gantiView('store');
+            } catch(e) {
+                showToast("Failed to submit: " + e.message, "error");
+            }
+        });
+
+        // Riwayat Developer dari Firebase
+        document.getElementById('loadHistoryBtn').addEventListener('click', async function() {
+            const studioInput = document.getElementById('historyStudioInput').value.trim().toLowerCase();
+            const container = document.getElementById('devHistoryList');
+            container.innerHTML = `<p style="font-size:11px; color:var(--text-muted); text-align:center;">Loading history...</p>`;
+
+            try {
+                if(window.db && window.firebaseTools) {
+                    const querySnapshot = await window.firebaseTools.getDocs(window.firebaseTools.collection(window.db, "clephu_games"));
+                    container.innerHTML = "";
+                    let found = 0;
+                    querySnapshot.forEach((docSnap) => {
+                        let g = docSnap.data();
+                        if (!studioInput || g.author.toLowerCase().includes(studioInput)) {
+                            found++;
+                            let statusColor = g.status === 'approved' ? '#22c55e' : (g.status === 'rejected' ? '#ef4444' : '#f59e0b');
+                            container.innerHTML += `
+                                <div class="history-item">
+                                    <div>
+                                        <b>${g.title}</b> (${g.genre})<br>
+                                        <span style="font-size:9px; color:var(--text-muted);">${g.date || 'Recent'}</span>
+                                    </div>
+                                    <div><span style="color:${statusColor}; font-weight:700; text-transform:uppercase; font-size:10px;">${g.status}</span></div>
+                                </div>`;
+                        }
+                    });
+                    if (found === 0) container.innerHTML = `<p style="font-size: 11px; color: #ef4444; text-align: center;">No history found.</p>`;
+                }
+            } catch(e) {
+                container.innerHTML = `<p style="font-size: 11px; color: #ef4444; text-align: center;">Error loading history.</p>`;
+            }
+        });
+
+        async function muatBannerPromosi() {
+            const container = document.getElementById('promoBannerBox');
+            const promos = JSON.parse(localStorage.getItem('clephu_promos')) || [];
+            const approved = promos.filter(p => p.status === 'approved');
+
+            if (approved.length === 0) {
+                container.innerHTML = `<div class="promo-slide active"><img src="https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=600" class="promo-bg"><div class="promo-content"><span class="promo-tag">✨ Official</span><h3 class="promo-title">Clephu Ecosystem</h3><p class="promo-desc">Play the best HTML5 games globally!</p></div></div>`;
+                return;
+            }
+            container.innerHTML = "";
+            approved.forEach((p, i) => {
+                let slide = document.createElement('div');
+                slide.className = `promo-slide ${i === 0 ? 'active' : ''}`;
+                slide.innerHTML = `<img src="${p.image}" class="promo-bg"><div class="promo-content"><span class="promo-tag">⭐ Featured</span><h3 class="promo-title">${p.title}</h3><p class="promo-desc">By ${p.author}</p></div>`;
+                slide.addEventListener('click', () => mainkanGame(p.link, p.title));
+                container.appendChild(slide);
+            });
+        }
+
+        async function muatStoreGame() {
+            const gridContainer = document.getElementById('storeGameList');
+            gridContainer.innerHTML = `<p style="font-size: 12px; color: var(--text-muted); text-align: center; grid-column: span 2; padding: 40px;" data-i18n="loading_text">Loading games from Firebase...</p>`;
+            
+            try {
+                if(window.db && window.firebaseTools) {
+                    const querySnapshot = await window.firebaseTools.getDocs(window.firebaseTools.collection(window.db, "clephu_games"));
+                    gridContainer.innerHTML = "";
+                    let count = 0;
+                    const playText = i18n[currentLang] ? i18n[currentLang].play_btn : "Play Now";
+                    
+                    querySnapshot.forEach((docSnap) => {
+                        let game = docSnap.data();
+                        if(game.status === 'approved') {
+                            count++;
+                            let card = document.createElement('div');
+                            card.className = 'game-card';
+                            card.innerHTML = `
+                                <div class="game-thumb-container">
+                                    <img src="${game.image}" class="game-thumb">
+                                    <span class="game-badge">${game.genre || 'HTML5'}</span>
+                                </div>
+                                <div class="game-details">
+                                    <h3 class="game-title">${game.title}</h3>
+                                    <div class="game-author">By ${game.author}</div>
+                                    <button class="btn-play">${playText}</button>
+                                </div>
+                            `;
+                            card.addEventListener('click', () => mainkanGame(game.link, game.title));
+                            gridContainer.appendChild(card);
+                        }
+                    });
+                    if (count === 0) gridContainer.innerHTML = `<div style="grid-column: span 2; text-align: center; padding: 40px; color: var(--text-muted); font-size: 11px;">No approved games available yet.</div>`;
+                }
+            } catch(e) {
+                gridContainer.innerHTML = `<div style="grid-column: span 2; text-align: center; padding: 40px; color: #ef4444; font-size: 11px;">Failed to load from Firebase.</div>`;
+            }
+        }
+
+        async function muatDropdownPromoGame() {
+            const sel = document.getElementById('promoGameSelect');
+            if(!window.db || !window.firebaseTools) return;
+            const querySnapshot = await window.firebaseTools.getDocs(window.firebaseTools.collection(window.db, "clephu_games"));
+            sel.innerHTML = "";
+            querySnapshot.forEach((docSnap) => {
+                let g = docSnap.data();
+                if(g.status === 'approved') sel.innerHTML += `<option value="${g.link}">${g.title} (${g.author})</option>`;
+            });
+        }
+
+        document.getElementById('submitPromoBtn').addEventListener('click', function() {
+            const author = document.getElementById('promoAuthor').value.trim();
+            const title = document.getElementById('promoTitleGame').value.trim();
+            const link = document.getElementById('promoGameSelect').value;
+            const imageFile = document.getElementById('promoImageFile').files[0];
+
+            if (!author || !title || !link || !imageFile) { showToast("Please complete promotion data!", "error"); return; }
+
+            const reader = new FileReader();
+            reader.onload = e => {
+                const promos = JSON.parse(localStorage.getItem('clephu_promos')) || [];
+                promos.push({ id: 'promo_' + Date.now(), author, title, link, image: e.target.result, status: "pending" });
+                localStorage.setItem('clephu_promos', JSON.stringify(promos));
+                showToast("Promo request submitted!");
+                gantiView('store');
+            };
+            reader.readAsDataURL(imageFile);
+        });
+
+        function mainkanGame(url, title) {
+            document.getElementById('modalGameTitle').innerText = title;
+            document.getElementById('gameIframe').src = url;
+            document.getElementById('gameModal').style.display = 'flex';
+        }
+
+        document.getElementById('closeModalBtn').addEventListener('click', () => {
+            document.getElementById('gameModal').style.display = 'none';
+            document.getElementById('gameIframe').src = "";
+        });
+
+        document.getElementById('checkStatsBtn').addEventListener('click', async function() {
+            const authorInput = document.getElementById('checkAuthorName').value.trim().toLowerCase();
+            const resultContainer = document.getElementById('devStatsResult');
+            const wdSection = document.getElementById('withdrawSection');
+            
+            if(!window.db || !window.firebaseTools) return;
+            const querySnapshot = await window.firebaseTools.getDocs(window.firebaseTools.collection(window.db, "clephu_games"));
+            
+            let totalPlayers = 0, totalAdViews = 0;
+            querySnapshot.forEach((docSnap) => {
+                let game = docSnap.data();
+                if (game.status === 'approved' && game.author.toLowerCase() === authorInput) {
+                    totalPlayers += (game.playersCount || 0);
+                    totalAdViews += (game.adViews || 0);
+                }
+            });
+            let devEarnings = Math.round((totalAdViews * 0.01) * 0.70 * 100) / 100;
+            if (totalPlayers > 0 || totalAdViews > 0) {
+                resultContainer.innerHTML = `<div class="financial-box"><div class="financial-row"><span>Available Balance (70%):</span> <b style="color:#22c55e;">$ ${devEarnings}</b></div></div>`;
+                wdSection.style.display = 'block';
+            } else {
+                resultContainer.innerHTML = `<p style="font-size: 11px; color: #ef4444; text-align: center;">Studio not found.</p>`;
+                wdSection.style.display = 'none';
+            }
+        });
+
+        document.getElementById('withdrawBtn').addEventListener('click', function() {
+            const author = document.getElementById('checkAuthorName').value.trim();
+            const method = document.getElementById('wdMethod').value;
+            const account = document.getElementById('wdAccount').value.trim();
+            const amount = Number(document.getElementById('wdAmount').value);
+            if (!account || !amount) { showToast("Please complete withdrawal details!", "error"); return; }
+            const withdraws = JSON.parse(localStorage.getItem('clephu_withdraws')) || [];
+            withdraws.push({ id: 'wd_' + Date.now(), author, method, account, amount, status: "Pending" });
+            localStorage.setItem('clephu_withdraws', JSON.stringify(withdraws));
+            showToast("Withdrawal request sent successfully!");
+        });
+
+        document.getElementById('sendChatBtn').addEventListener('click', function() {
+            const sender = document.getElementById('chatDevName').value.trim();
+            const message = document.getElementById('chatInputText').value.trim();
+            if (!sender || !message) return;
+            const chats = JSON.parse(localStorage.getItem('clephu_chats')) || [];
+            chats.push({ id: 'chat_' + Date.now(), sender, message, reply: "", time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) });
+            localStorage.setItem('clephu_chats', JSON.stringify(chats));
+            document.getElementById('chatInputText').value = "";
+            muatChatDeveloper();
+        });
+
+        function muatChatDeveloper() {
+            const container = document.getElementById('chatMessagesContainer');
+            const chats = JSON.parse(localStorage.getItem('clephu_chats')) || [];
+            const activeStudio = document.getElementById('chatDevName').value.trim().toLowerCase();
+            container.innerHTML = "";
+            chats.forEach(c => {
+                if (!activeStudio || c.sender.toLowerCase().includes(activeStudio)) {
+                    container.innerHTML += `<div class="chat-msg"><div class="chat-sender">${c.sender} (${c.time})</div><div>${c.message}</div>${c.reply ? `<div class="admin-reply" style="margin-top:6px; padding:6px; font-size:10px;">🛡️ <b>Admin:</b> ${c.reply}</div>` : ''}</div>`;
+                }
+            });
+        }
+
+        muatStoreGame();
+        muatBannerPromosi();
+    </script>
+  <script type=”module”>
+    // Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyCMw7gOMC3Fz_ZziVG5nMjlglzFi_ZWCHY",
+  authDomain: "clephu-mini-game-app.firebaseapp.com",
+  projectId: "clephu-mini-game-app",
+  storageBucket: "clephu-mini-game-app.firebasestorage.app",
+  messagingSenderId: "596292189047",
+  appId: "1:596292189047:web:03e8e21d2b1911a25dbf72"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+  </script>
+</body>
+</html>
