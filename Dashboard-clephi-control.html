@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clephu Games - Master Control Center</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: #060913;
+            --bg-card: rgba(19, 28, 46, 0.7);
+            --accent-glow: #6366f1;
+            --accent-primary: #ef4444;
+            --accent-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        #netlify-badge, a[href*="netlify.com"] { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }
+
+        body { font-family: 'Poppins', sans-serif; background-color: var(--bg-main); color: var(--text-main); margin: 0; padding: 0; display: flex; justify-content: center; }
+        .app-container { width: 100%; max-width: 480px; min-height: 100vh; background: radial-gradient(circle at top, #111827 0%, #060913 100%); display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; }
+        
+        #toastContainer { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 99999; display: flex; flex-direction: column; gap: 8px; width: 90%; max-width: 400px; pointer-events: none; }
+        .toast { background: rgba(13, 20, 33, 0.95); backdrop-filter: blur(12px); border: 1px solid var(--accent-glow); color: var(--text-main); padding: 12px 18px; border-radius: 12px; font-size: 11px; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.5); opacity: 0; transform: translateY(-20px); transition: all 0.3s ease; pointer-events: auto; display: flex; align-items: center; gap: 10px; }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        .toast.success { border-color: #22c55e; }
+        .toast.error { border-color: #ef4444; }
+
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 14px; }
+        .logo h1 { font-size: 13px; margin: 0; background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800; }
+        .btn-back { font-size: 10px; background: rgba(99,102,241,0.2); color: #818cf8; border: 1px solid rgba(99,102,241,0.3); padding: 6px 12px; border-radius: 8px; text-decoration: none; font-weight: 600; }
+
+        .login-box { max-width: 320px; margin: 80px auto; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 20px; padding: 24px; text-align: center; }
+        .form-group { margin-bottom: 14px; text-align: left; }
+        .form-label { font-size: 11px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 6px; }
+        .form-input, .form-textarea, .form-select { width: 100%; padding: 12px; background: rgba(6, 9, 19, 0.8); border: 1px solid var(--border-color); border-radius: 12px; color: var(--text-main); font-size: 12px; box-sizing: border-box; outline: none; font-family: 'Poppins', sans-serif; }
+        .form-textarea { height: 80px; resize: none; font-size: 11px; }
+        .btn-submit { width: 100%; padding: 12px; background: var(--accent-gradient); color: white; border: none; border-radius: 12px; font-weight: 700; font-size: 12px; cursor: pointer; }
+
+        .admin-tabs { display: flex; background: rgba(13, 20, 33, 0.6); border: 1px solid var(--border-color); margin-bottom: 16px; border-radius: 14px; overflow: hidden; padding: 4px; flex-wrap: wrap; gap: 2px; }
+        .admin-tab-btn { flex: 1; min-width: 55px; padding: 6px 2px; text-align: center; font-size: 8px; font-weight: 600; color: var(--text-muted); background: none; border: none; cursor: pointer; border-radius: 10px; }
+        .admin-tab-btn.active { color: #fff; background: var(--accent-glow); }
+
+        .admin-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 14px; margin-bottom: 14px; }
+        .game-info-row { display: flex; gap: 12px; margin-bottom: 10px; }
+        .game-thumb-admin { width: 45px; height: 45px; border-radius: 8px; object-fit: cover; background: #1e293b; }
+        .financial-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 11px; }
+        .btn-group { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+        .btn-action { flex: 1; padding: 8px; border: none; border-radius: 8px; font-weight: 600; font-size: 10px; cursor: pointer; }
+        .btn-approve { background: rgba(34, 197, 94, 0.2); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.4); }
+        .btn-reject { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.4); }
+        .btn-delete { background: rgba(100, 116, 139, 0.2); color: #cbd5e1; border: 1px solid rgba(100, 116, 139, 0.4); }
+        .btn-preview { background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); }
+
+        .toggle-container { display: flex; justify-content: space-between; align-items: center; background: rgba(6,9,19,0.8); border: 1px solid var(--border-color); padding: 10px 14px; border-radius: 12px; margin-bottom: 12px; }
+        .switch { position: relative; display: inline-block; width: 40px; height: 22px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #334155; transition: .4s; border-radius: 22px; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #22c55e; }
+        input:checked + .slider:before { transform: translateX(18px); }
+
+        #adminModal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(6, 9, 19, 0.96); backdrop-filter: blur(16px); z-index: 100; display: none; flex-direction: column; }
+    </style>
+</head>
+<body>
+
+    <div id="toastContainer"></div>
+
+    <div class="app-container">
+        <header>
+            <div class="logo"><h1>🛡️ CLEPHU ADMIN</h1></div>
+            <a href="index.html" class="btn-back">⬅️ Main Store</a>
+        </header>
+
+        <div id="adminLoginSection" class="login-box">
+            <h3 style="color: var(--accent-primary); margin-top:0; font-size:15px;">Admin Authentication</h3>
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <input type="password" id="inputSandiAdmin" class="form-input" placeholder="Enter password...">
+            </div>
+            <button type="button" id="loginAdminBtn" class="btn-submit">🔓 Login</button>
+        </div>
+
+        <div id="adminDashboardSection" style="display: none;">
+            <div class="admin-tabs">
+                <button id="tabModBtn" class="admin-tab-btn active">🎮 Games</button>
+                <button id="tabGoogleAdsBtn" class="admin-tab-btn">💰 Ads</button>
+                <button id="tabSettingsBtn" class="admin-tab-btn" style="color:#38bdf8; font-weight:700;">⚙️ Master</button>
+                <button id="tabStatsAdminBtn" class="admin-tab-btn">📊 Stats</button>
+                <button id="tabPromoAdminBtn" class="admin-tab-btn">⭐ Promo</button>
+                <button id="tabPayBtn" class="admin-tab-btn">💳 Payout</button>
+                <button id="tabChatAdminBtn" class="admin-tab-btn">💬 Chat</button>
+            </div>
+
+            <!-- Tab 1: Moderasi Game -->
+            <div id="panelMod">
+                <div style="font-size: 11px; font-weight: 600; margin-bottom: 10px; color: var(--text-muted);">Online Game URL Moderation</div>
+                <div id="adminModerasiList"></div>
+            </div>
+
+            <!-- Tab 2: Pengaturan Google Ads & Saklar Iklan -->
+            <div id="panelGoogleAds" style="display: none;">
+                <div class="admin-card">
+                    <h3 style="font-size: 13px; margin-top:0; color:#f59e0b;">Ad Network Management</h3>
+                    <p style="font-size: 10px; color:var(--text-muted); margin-bottom:12px;">Kontrol tayangan iklan di seluruh menu game utama menggunakan saklar di bawah ini.</p>
+                    
+                    <div class="toggle-container">
+                        <span style="font-size: 11px; font-weight: 600;">Aktifkan Iklan Otomatis (Ads On/Off)</span>
+                        <label class="switch">
+                            <input type="checkbox" id="adSwitchToggle" onchange="toggleAdSwitch(this)">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Google Ads / Banner HTML Script</label>
+                        <textarea id="googleAdsInput" class="form-textarea" placeholder="<script async src='https://pagead2.googlesyndication.com/...'>...</script>"></textarea>
+                    </div>
+                    <button type="button" id="saveGoogleAdsBtn" class="btn-submit" style="background:var(--accent-green);">💾 Save Ad Configuration</button>
+                </div>
+            </div>
+
+            <!-- Tab 3: Master Control Center (Pusat Pengaturan Masa Depan) -->
+            <div id="panelSettings" style="display: none;">
+                <div class="admin-card">
+                    <h3 style="font-size: 13px; margin-top:0; color:#38bdf8;">Master Platform Control Hub</h3>
+                    <p style="font-size: 10px; color:var(--text-muted); margin-bottom:14px;">Modifikasi seluruh aspek, keamanan, branding, dan modul operasional tanpa mengubah kode sumber HTML.</p>
+                    
+                    <div class="form-group">
+                        <label class="form-label">1. Platform Title (Judul Situs Utama)</label>
+                        <input type="text" id="cfgPlatformTitle" class="form-input" placeholder="Clephu Games & Development">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">2. Developer Revenue Share (%)</label>
+                        <input type="number" id="cfgDevShare" class="form-input" placeholder="70">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">3. Admin Password (Ubah Kata Sandi Admin)</label>
+                        <input type="text" id="cfgAdminPassword" class="form-input" placeholder="rt03rw04">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">4. Maintenance Mode (Status Perbaikan)</label>
+                        <select id="cfgMaintenance" class="form-select">
+                            <option value="off">Normal Operation (Aktif)</option>
+                            <option value="on">Maintenance Mode (Tutup Sementara)</option>
+                        </select>
+                    </div>
+
+                    <div class="toggle-container">
+                        <span style="font-size: 11px; font-weight: 600;">Izinkan Fitur Share Game Publik</span>
+                        <label class="switch">
+                            <input type="checkbox" id="cfgShareToggle" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">5. Global Broadcast Announcement</label>
+                        <textarea id="cfgAnnouncement" class="form-textarea" placeholder="Tulis pengumuman global untuk seluruh pengunjung situs..."></textarea>
+                    </div>
+
+                    <button type="button" id="saveGlobalConfigBtn" class="btn-submit" style="background: var(--accent-gradient);">💾 Save All Master Settings</button>
+                </div>
+            </div>
+
+            <!-- Tab 4: Stats -->
+            <div id="panelStatsAdmin" style="display: none;">
+                <div class="admin-card">
+                    <h3 style="font-size: 13px; margin-top:0; color:#22c55e;">Firebase Analytics & Metrics</h3>
+                    <div id="adminStatsContainer"></div>
+                </div>
+            </div>
+
+            <!-- Tab 5: Promo -->
+            <div id="panelPromoAdmin" style="display: none;">
+                <div style="font-size: 11px; font-weight: 600; margin-bottom: 10px; color: var(--text-muted);">Promo Banner Approvals</div>
+                <div id="adminPromoList"></div>
+            </div>
+
+            <!-- Tab 6: Payout -->
+            <div id="panelPay" style="display: none;">
+                <div style="font-size: 11px; font-weight: 600; margin-bottom: 10px; color: var(--text-muted);">Withdrawal Requests</div>
+                <div id="adminPayoutList"></div>
+            </div>
+
+            <!-- Tab 7: Chat -->
+            <div id="panelChatAdmin" style="display: none;">
+                <div style="font-size: 11px; font-weight: 600; margin-bottom: 10px; color: var(--text-muted);">Messages from Developers</div>
+                <div id="adminChatList"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="adminModal">
+        <div style="padding: 12px 20px; background: rgba(13, 20, 33, 0.9); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+            <h3 id="adminModalTitle" style="font-size: 12px; margin: 0; color: #fff;">Game URL Preview</h3>
+            <button onclick="document.getElementById('adminModal').style.display='none'; document.getElementById('adminGameIframe').src='';" style="background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.4); padding: 5px 10px; border-radius: 6px; font-weight: 600; font-size: 10px; cursor: pointer;">Close ✕</button>
+        </div>
+        <div style="flex: 1; width: 100%; height: calc(100vh - 50px);">
+            <iframe id="adminGameIframe" style="width: 100%; height: 100%; border: none; background: #000;"></iframe>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyCMw7gOMC3Fz_ZziVG5nMjlglzFi_ZWCHY",
+          authDomain: "clephu-mini-game-app.firebaseapp.com",
+          projectId: "clephu-mini-game-app",
+          storageBucket: "clephu-mini-game-app.firebasestorage.app",
+          messagingSenderId: "596292189047",
+          appId: "1:596292189047:web:03e8e21d2b1911a25dbf72"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        window.db = db;
+        window.firebaseTools = { collection, getDocs, doc, updateDoc, deleteDoc };
+    </script>
+
+    <script>
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `<span>${type === 'success' ? '✅' : '⚠️'}</span> <span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 10);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Mengambil password admin dari localStorage jika pernah diubah, atau pakai default
+        function getAdminPassword() {
+            return localStorage.getItem('cfg_admin_pass') || "rt03rw04";
+        }
+
+        document.getElementById('loginAdminBtn').addEventListener('click', function() {
+            if (document.getElementById('inputSandiAdmin').value === getAdminPassword()) {
+                document.getElementById('adminLoginSection').style.display = 'none';
+                document.getElementById('adminDashboardSection').style.display = 'block';
+                muatDataAdmin();
+                showToast("Successfully logged in as Admin!");
+            } else { 
+                showToast("Incorrect password!", "error"); 
+            }
+        });
+
+        // Tab Navigasi Admin
+        ['Mod', 'GoogleAds', 'Settings', 'StatsAdmin', 'PromoAdmin', 'Pay', 'ChatAdmin'].forEach(t => {
+            document.getElementById('tab' + t + 'Btn').addEventListener('click', function() {
+                ['Mod', 'GoogleAds', 'Settings', 'StatsAdmin', 'PromoAdmin', 'Pay', 'ChatAdmin'].forEach(x => {
+                    document.getElementById('tab' + x + 'Btn').classList.remove('active');
+                    document.getElementById('panel' + x).style.display = 'none';
+                });
+                this.classList.add('active');
+                document.getElementById('panel' + t).style.display = 'block';
+                if(t === 'GoogleAds') muatPengaturanGoogleAds();
+                if(t === 'Settings') muatPengaturanGlobal();
+                if(t === 'StatsAdmin') muatStatistikAdmin();
+            });
+        });
+
+        function muatPengaturanGoogleAds() {
+            document.getElementById('googleAdsInput').value = localStorage.getItem('clephu_google_ads') || '';
+            const adStatus = localStorage.getItem('clephu_ad_switch') !== 'off';
+            document.getElementById('adSwitchToggle').checked = adStatus;
+        }
+
+        window.toggleAdSwitch = function(checkbox) {
+            const status = checkbox.checked ? 'on' : 'off';
+            localStorage.setItem('clephu_ad_switch', status);
+            showToast(checkbox.checked ? "Global ads enabled!" : "Global ads disabled!");
+        };
+
+        document.getElementById('saveGoogleAdsBtn').addEventListener('click', function() {
+            const adCode = document.getElementById('googleAdsInput').value;
+            localStorage.setItem('clephu_google_ads', adCode);
+            showToast("Google Ads script saved successfully!");
+        });
+
+        // Master Control Hub Settings Handler
+        function muatPengaturanGlobal() {
+            document.getElementById('cfgPlatformTitle').value = localStorage.getItem('cfg_title') || 'Clephu Games & Development';
+            document.getElementById('cfgDevShare').value = localStorage.getItem('cfg_devshare') || '70';
+            document.getElementById('cfgAdminPassword').value = getAdminPassword();
+            document.getElementById('cfgMaintenance').value = localStorage.getItem('cfg_maintenance') || 'off';
+            document.getElementById('cfgShareToggle').checked = localStorage.getItem('cfg_share_status') !== 'off';
+            document.getElementById('cfgAnnouncement').value = localStorage.getItem('cfg_announcement') || '';
+        }
+
+        document.getElementById('saveGlobalConfigBtn').addEventListener('click', function() {
+            localStorage.setItem('cfg_title', document.getElementById('cfgPlatformTitle').value);
+            localStorage.setItem('cfg_devshare', document.getElementById('cfgDevShare').value);
+            localStorage.setItem('cfg_admin_pass', document.getElementById('cfgAdminPassword').value);
+            localStorage.setItem('cfg_maintenance', document.getElementById('cfgMaintenance').value);
+            localStorage.setItem('cfg_share_status', document.getElementById('cfgShareToggle').checked ? 'on' : 'off');
+            localStorage.setItem('cfg_announcement', document.getElementById('cfgAnnouncement').value);
+            showToast("Master configuration updated successfully!");
+        });
+
+        async function muatDataAdmin() {
+            const modCont = document.getElementById('adminModerasiList');
+            modCont.innerHTML = `<p style="font-size:11px; color:var(--text-muted); text-align:center;">Loading games from Firebase...</p>`;
+            
+            try {
+                if(window.db && window.firebaseTools) {
+                    const querySnapshot = await window.firebaseTools.getDocs(window.firebaseTools.collection(window.db, "clephu_games"));
+                    modCont.innerHTML = "";
+                    let count = 0;
+                    
+                    querySnapshot.forEach((docSnap) => {
+                        let game = docSnap.data();
+                        let docId = docSnap.id;
+                        count++;
+                        modCont.innerHTML += `
+                            <div class="admin-card">
+                                <div class="game-info-row">
+                                    <img src="${game.image}" class="game-thumb-admin">
+                                    <div style="flex:1;">
+                                        <h4 style="margin:0; font-size:11px;">${game.title}</h4>
+                                        <div style="font-size:9px; color:var(--text-muted);">By ${game.author} | Genre: ${game.genre}</div>
+                                        <div style="font-size:9px; color:#38bdf8; word-break:break-all;">URL: <a href="${game.link}" target="_blank" style="color:#38bdf8;">${game.link}</a></div>
+                                        <div style="font-size:9px; color:var(--text-muted);">Status: <b>${game.status}</b></div>
+                                    </div>
+                                </div>
+                                <div class="btn-group">
+                                    <button class="btn-action btn-preview" onclick="previewUrlAdmin('${game.link}', '${game.title}')">🔍 Preview URL</button>
+                                    <button class="btn-action btn-approve" onclick="ubahStatusGame('${docId}', 'approved')">✅ Approve</button>
+                                    <button class="btn-action btn-reject" onclick="ubahStatusGame('${docId}', 'rejected')">❌ Reject</button>
+                                    <button class="btn-action btn-delete" onclick="hapusGame('${docId}')">🗑️ Delete</button>
+                                </div>
+                            </div>`;
+                    });
+                    if(count === 0) modCont.innerHTML = `<p style="font-size:11px; color:var(--text-muted); text-align:center;">No games submitted yet.</p>`;
+                }
+            } catch(e) {
+                modCont.innerHTML = `<p style="font-size:11px; color:#ef4444; text-align:center;">Failed to load data.</p>`;
+            }
+
+            muatDataPendukungAdmin();
+        }
+
+        window.previewUrlAdmin = function(url, title) {
+            document.getElementById('adminModalTitle').innerText = "Preview: " + title;
+            document.getElementById('adminGameIframe').src = url;
+            document.getElementById('adminModal').style.display = 'flex';
+        };
+
+        window.ubahStatusGame = async function(docId, status) {
+            try {
+                const gameRef = window.firebaseTools.doc(window.db, "clephu_games", docId);
+                await window.firebaseTools.updateDoc(gameRef, { status: status });
+                muatDataAdmin();
+                showToast(`Game successfully ${status}!`);
+            } catch(e) {
+                showToast("Failed to update status: " + e.message, "error");
+            }
+        };
+
+        window.hapusGame = async function(docId) {
+            if(confirm("Permanently delete this game from Firebase?")) {
+                try {
+                    await window.firebaseTools.deleteDoc(window.firebaseTools.doc(window.db, "clephu_games", docId));
+                    muatDataAdmin();
+                    showToast("Game deleted successfully.", "error");
+                } catch(e) {
+                    showToast("Failed to delete: " + e.message, "error");
+                }
+            }
+        };
+
+        async function muatStatistikAdmin() {
+            const statsCont = document.getElementById('adminStatsContainer');
+            statsCont.innerHTML = "";
+            if(!window.db || !window.firebaseTools) return;
+            const querySnapshot = await window.firebaseTools.getDocs(window.firebaseTools.collection(window.db, "clephu_games"));
+            
+            querySnapshot.forEach((docSnap) => {
+                let g = docSnap.data();
+                statsCont.innerHTML += `
+                    <div style="background:rgba(6,9,19,0.6); border:1px solid var(--border-color); border-radius:10px; padding:10px; margin-bottom:8px; font-size:11px;">
+                        <div style="font-weight:700; color:#38bdf8; margin-bottom:4px;">${g.title} <span style="font-size:9px; color:var(--text-muted);">(${g.author})</span></div>
+                        <div class="financial-row"><span>Status:</span> <b>${g.status.toUpperCase()}</b></div>
+                        <div class="financial-row"><span>Total Players:</span> <b>${g.playersCount || 0}</b></div>
+                        <div class="financial-row"><span>Ad Impressions:</span> <b>${g.adViews || 0}</b></div>
+                    </div>`;
+            });
+        }
+
+        function muatDataPendukungAdmin() {
+            const promoCont = document.getElementById('adminPromoList');
+            promoCont.innerHTML = "";
+            const promos = JSON.parse(localStorage.getItem('clephu_promos')) || [];
+            promos.forEach(p => {
+                promoCont.innerHTML += `<div class="admin-card"><h4 style="margin:0 0 4px; font-size:11px;">${p.title} (${p.author})</h4><div class="btn-group"><button class="btn-action btn-approve" onclick="ubahStatusPromo('${p.id}', 'approved')">Approve</button><button class="btn-action btn-delete" onclick="hapusPromo('${p.id}')">Delete</button></div></div>`;
+            });
+
+            const payCont = document.getElementById('adminPayoutList');
+            payCont.innerHTML = "";
+            const withdraws = JSON.parse(localStorage.getItem('clephu_withdraws')) || [];
+            withdraws.forEach(wd => {
+                payCont.innerHTML += `<div class="admin-card"><h4 style="margin:0 0 4px; font-size:11px; color:#38bdf8;">Dev: ${wd.author} ($ ${wd.amount})</h4><button class="btn-action btn-approve" style="width:100%;" onclick="selesaiWd('${wd.id}')">Mark as Paid</button></div>`;
+            });
+
+            const chatCont = document.getElementById('adminChatList');
+            chatCont.innerHTML = "";
+            const chats = JSON.parse(localStorage.getItem('clephu_chats')) || [];
+            chats.forEach(c => {
+                chatCont.innerHTML += `<div class="admin-card"><div style="font-size:10px; color:#38bdf8; font-weight:700;">${c.sender}</div><div style="font-size:11px; margin:4px 0;">${c.message}</div><div style="display:flex; gap:6px;"><input type="text" id="reply_${c.id}" class="form-input" placeholder="Reply..." style="padding:4px; font-size:10px;"><button class="btn-action btn-approve" onclick="balasChat('${c.id}')">Send</button></div></div>`;
+            });
+        }
+
+        window.ubahStatusPromo = function(id, status) {
+            let promos = JSON.parse(localStorage.getItem('clephu_promos')) || [];
+            let idx = promos.findIndex(p => p.id === id);
+            if(idx !== -1) { promos[idx].status = status; localStorage.setItem('clephu_promos', JSON.stringify(promos)); muatDataAdmin(); showToast("Promo status updated!"); }
+        };
+
+        window.hapusPromo = function(id) {
+            let promos = JSON.parse(localStorage.getItem('clephu_promos')) || [];
+            localStorage.setItem('clephu_promos', JSON.stringify(promos.filter(p => p.id !== id)));
+            muatDataAdmin();
+            showToast("Promo deleted.", "error");
+        };
+
+        window.selesaiWd = function(id) {
+            let withdraws = JSON.parse(localStorage.getItem('clephu_withdraws')) || [];
+            let idx = withdraws.findIndex(w => w.id === id);
+            if(idx !== -1) { withdraws[idx].status = "Completed"; localStorage.setItem('clephu_withdraws', JSON.stringify(withdraws)); muatDataAdmin(); showToast("Payout marked as completed!"); }
+        };
+
+        window.balasChat = function(id) {
+            let replyText = document.getElementById('reply_' + id).value.trim();
+            if(!replyText) return;
+            let chats = JSON.parse(localStorage.getItem('clephu_chats')) || [];
+            let idx = chats.findIndex(c => c.id === id);
+            if(idx !== -1) { chats[idx].reply = replyText; localStorage.setItem('clephu_chats', JSON.stringify(chats)); muatDataAdmin(); showToast("Reply sent to developer!"); }
+        };
+    </script>
+</body>
+</html>
